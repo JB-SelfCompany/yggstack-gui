@@ -167,7 +167,7 @@ describe('IPCBridge', () => {
 
     it('should return mock version', async () => {
       const response = await ipc.emit(Events.APP_VERSION)
-      expect(response.data.version).toBe('0.1.0-dev')
+      expect(response.data.version).toBe('dev-mock')
     })
 
     it('should return mock settings', async () => {

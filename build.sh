@@ -163,12 +163,13 @@ mkdir -p "${BIN_DIR}"
 mkdir -p "${DIST_DIR}"
 
 # Determine output filename
+VERSION_PKG="github.com/JB-SelfCompany/yggstack-gui/internal/version"
 if [ "$GOOS" = "windows" ]; then
     OUTPUT_NAME="yggstack-gui-${GOOS}-${GOARCH}.exe"
-    LDFLAGS="-X main.version=${VERSION} -s -w -H windowsgui"
+    LDFLAGS="-X ${VERSION_PKG}.Version=${VERSION} -s -w -H windowsgui"
 else
     OUTPUT_NAME="yggstack-gui-${GOOS}-${GOARCH}"
-    LDFLAGS="-X main.version=${VERSION} -s -w"
+    LDFLAGS="-X ${VERSION_PKG}.Version=${VERSION} -s -w"
 fi
 
 # Build

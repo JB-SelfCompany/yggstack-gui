@@ -379,7 +379,7 @@ class IPCBridge {
    */
   _mockResponse(event, payload) {
     const mockResponses = {
-      [Events.APP_VERSION]: { success: true, data: { version: '0.1.0-dev' } },
+      [Events.APP_VERSION]: { success: true, data: { version: 'dev-mock' } },
       [Events.APP_READY]: { success: true, data: { acknowledged: true } },
       [Events.APP_PING]: { success: true, data: { pong: true, timestamp: Date.now() } },
       [Events.NODE_START]: {

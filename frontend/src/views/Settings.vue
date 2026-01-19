@@ -89,7 +89,7 @@
           <div class="about-info">
             <div class="about-row">
               <span class="about-label">{{ t('settings.version') }}</span>
-              <span class="about-value">0.1.0-dev</span>
+              <span class="about-value">{{ appVersion || '...' }}</span>
             </div>
             <div class="about-row">
               <span class="about-label">{{ t('settings.framework') }}</span>
@@ -122,8 +122,20 @@ const theme = ref('system')
 const minimizeToTray = ref(true)
 const startMinimized = ref(false)
 const logLevel = ref('info')
+const appVersion = ref('')
 
 onMounted(async () => {
+  // Load app version
+  try {
+    const versionResponse = await ipc.emit(Events.APP_VERSION)
+    if (versionResponse.success && versionResponse.data) {
+      appVersion.value = versionResponse.data.version
+    }
+  } catch (err) {
+    console.error('Failed to load version:', err)
+    appVersion.value = 'unknown'
+  }
+
   // Load settings from backend
   try {
     const response = await ipc.emit(Events.SETTINGS_GET)

@@ -13,13 +13,12 @@ import (
 	"github.com/energye/golcl/lcl"
 	"github.com/JB-SelfCompany/yggstack-gui/internal/app"
 	"github.com/JB-SelfCompany/yggstack-gui/internal/logger"
+	"github.com/JB-SelfCompany/yggstack-gui/internal/version"
 	"github.com/JB-SelfCompany/yggstack-gui/internal/web"
 )
 
 //go:embed resources
 var resources embed.FS
-
-var version = "dev"
 
 func main() {
 	// Check if app should start minimized (from autostart)
@@ -41,9 +40,9 @@ func main() {
 	defer log.Sync()
 
 	if startMinimized {
-		log.Info("Starting Yggstack-GUI in minimized mode (from autostart)", "version", version)
+		log.Info("Starting Yggstack-GUI in minimized mode (from autostart)", "version", version.Version)
 	} else {
-		log.Info("Starting Yggstack-GUI", "version", version)
+		log.Info("Starting Yggstack-GUI", "version", version.Version)
 	}
 
 	// Determine URL: use dev server or embedded assets
@@ -95,7 +94,7 @@ func main() {
 
 	// Create application instance for services
 	application := app.New(app.Config{
-		Version:            version,
+		Version:            version.Version,
 		Resources:          resources,
 		Logger:             log,
 		StartMinimized:     startMinimized,

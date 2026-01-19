@@ -10,6 +10,7 @@ import (
 	ipccontext "github.com/energye/energy/v2/cef/ipc/context"
 	"github.com/energye/energy/v2/cef/ipc/target"
 	"github.com/JB-SelfCompany/yggstack-gui/internal/logger"
+	"github.com/JB-SelfCompany/yggstack-gui/internal/version"
 )
 
 // Bridge handles IPC communication between Go backend and JS frontend
@@ -315,7 +316,7 @@ func (b *Bridge) handleAppVersion(req *Request) *Response {
 	return &Response{
 		Success: true,
 		Data: map[string]string{
-			"version": "0.1.0-dev",
+			"version": version.Version,
 		},
 	}
 }
