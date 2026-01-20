@@ -1,13 +1,20 @@
 package app
 
 import (
+	"runtime"
 	"sync"
+	"time"
 
 	"github.com/energye/energy/v2/cef"
 	"github.com/energye/energy/v2/pkgs/systray"
 	"go.uber.org/zap"
 
 	"github.com/JB-SelfCompany/yggstack-gui/internal/yggdrasil"
+)
+
+const (
+	// trayCallbackTimeout - максимальное время выполнения callback
+	trayCallbackTimeout = 10 * time.Second
 )
 
 // TrayIcon represents different tray icon states
@@ -35,8 +42,8 @@ type TrayManager struct {
 	mQuit      *systray.MenuItem
 
 	// State
-	isRunning    bool
-	currentIcon  TrayIcon
+	isRunning     bool
+	currentIcon   TrayIcon
 	isInitialized bool
 
 	// Callbacks
@@ -49,11 +56,11 @@ type TrayManager struct {
 	iconConnecting []byte
 
 	// Keep references to prevent GC from collecting handlers
-	clickHandler      func()
-	dClickHandler     func()
-	showHandler       func()
-	startStopHandler  func()
-	quitHandler       func()
+	clickHandler     func()
+	dClickHandler    func()
+	showHandler      func()
+	startStopHandler func()
+	quitHandler      func()
 }
 
 // NewTrayManager creates a new tray manager instance
@@ -87,8 +94,21 @@ func (t *TrayManager) SetIcons(stopped, running, connecting []byte) {
 func (t *TrayManager) Initialize() {
 	t.logger.Info("Initializing system tray")
 
-	// Run systray in a goroutine
-	go systray.Run(t.onReady, t.onExit)
+	// Run systray in a goroutine with thread locking
+	go func() {
+		// CRITICAL: Lock this goroutine to a single OS thread
+		// Windows message pumps require thread affinity - the HWND is bound to the thread
+		// that created it. Without LockOSThread, Go scheduler can move the goroutine
+		// to a different OS thread, causing the message pump to lose connection
+		// to the tray window and become unresponsive after some time.
+		// See: https://groups.google.com/g/golang-nuts/c/HTa5y2qLaWw
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+
+		t.logger.Info("System tray thread locked")
+		systray.Run(t.onReady, t.onExit)
+		t.logger.Info("System tray has exited")
+	}()
 }
 
 // onReady is called when the systray is ready
@@ -105,25 +125,15 @@ func (t *TrayManager) onReady() {
 	t.mu.Lock()
 	t.clickHandler = func() {
 		t.logger.Debug("Tray icon clicked")
-		t.mu.RLock()
-		callback := t.onShowWindow
-		t.mu.RUnlock()
-		if callback != nil {
-			cef.QueueAsyncCall(func(id int) {
-				callback()
-			})
-		}
+		t.executeCallbackSafely("click", func() func() {
+			return t.onShowWindow
+		})
 	}
 	t.dClickHandler = func() {
 		t.logger.Debug("Tray icon double-clicked")
-		t.mu.RLock()
-		callback := t.onShowWindow
-		t.mu.RUnlock()
-		if callback != nil {
-			cef.QueueAsyncCall(func(id int) {
-				callback()
-			})
-		}
+		t.executeCallbackSafely("dclick", func() func() {
+			return t.onShowWindow
+		})
 	}
 	t.mu.Unlock()
 
@@ -167,38 +177,23 @@ func (t *TrayManager) setupMenuClickHandlers() {
 	// Show window handler
 	t.showHandler = func() {
 		t.logger.Debug("Tray menu: Show clicked")
-		t.mu.RLock()
-		callback := t.onShowWindow
-		t.mu.RUnlock()
-		if callback != nil {
-			// Execute on main thread
-			cef.QueueAsyncCall(func(id int) {
-				callback()
-			})
-		}
+		t.executeCallbackSafely("show", func() func() {
+			return t.onShowWindow
+		})
 	}
 
 	// Start/Stop handler
 	t.startStopHandler = func() {
 		t.logger.Debug("Tray menu: Start/Stop clicked")
-		// Execute toggle on main thread to avoid potential race conditions
-		cef.QueueAsyncCall(func(id int) {
-			t.toggleNode()
-		})
+		t.executeOnMainThreadSafely("startStop", t.toggleNode)
 	}
 
 	// Quit handler
 	t.quitHandler = func() {
 		t.logger.Debug("Tray menu: Quit clicked")
-		t.mu.RLock()
-		callback := t.onQuit
-		t.mu.RUnlock()
-		if callback != nil {
-			// Execute on main thread
-			cef.QueueAsyncCall(func(id int) {
-				callback()
-			})
-		}
+		t.executeCallbackSafely("quit", func() func() {
+			return t.onQuit
+		})
 	}
 
 	t.mu.Unlock()
@@ -367,4 +362,49 @@ func (t *TrayManager) IsNodeRunning() bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.isRunning
+}
+
+// executeCallbackSafely выполняет callback с RLock и таймаутом через CEF main thread
+func (t *TrayManager) executeCallbackSafely(name string, callbackGetter func() func()) {
+	t.mu.RLock()
+	callback := callbackGetter()
+	t.mu.RUnlock()
+
+	if callback == nil {
+		return
+	}
+
+	t.executeOnMainThreadSafely(name, callback)
+}
+
+// executeOnMainThreadSafely выполняет функцию на CEF main thread с таймаутом
+func (t *TrayManager) executeOnMainThreadSafely(name string, fn func()) {
+	if fn == nil {
+		return
+	}
+
+	done := make(chan struct{})
+
+	cef.QueueAsyncCall(func(id int) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.logger.Error("Tray callback panic",
+					zap.String("callback", name),
+					zap.Any("panic", r))
+			}
+			close(done)
+		}()
+		fn()
+	})
+
+	// Ждём выполнения с таймаутом
+	select {
+	case <-done:
+		t.logger.Debug("Tray callback completed", zap.String("callback", name))
+	case <-time.After(trayCallbackTimeout):
+		t.logger.Warn("Tray callback TIMEOUT - CEF main thread may be blocked",
+			zap.String("callback", name),
+			zap.Duration("timeout", trayCallbackTimeout))
+		// Не блокируем - callback продолжит выполнение в фоне когда CEF освободится
+	}
 }

@@ -32,14 +32,13 @@ parse_version() {
     fi
 }
 
-# Update versioninfo.json with current version
-update_versioninfo() {
+# Generate versioninfo.json with current version (for Windows resource embedding)
+generate_versioninfo() {
     local versioninfo="cmd/yggstack-gui/versioninfo.json"
-    if [ -f "$versioninfo" ]; then
-        echo -e "${YELLOW}Updating version info...${NC}"
+    echo -e "${YELLOW}Generating version info...${NC}"
 
-        # Create updated versioninfo.json
-        cat > "$versioninfo" << EOF
+    # Always create/overwrite versioninfo.json with current version
+    cat > "$versioninfo" << EOF
 {
   "FixedFileInfo": {
     "FileVersion": {"Major": ${VERSION_MAJOR}, "Minor": ${VERSION_MINOR}, "Patch": ${VERSION_PATCH}, "Build": 0},
@@ -63,8 +62,7 @@ update_versioninfo() {
   }
 }
 EOF
-        echo -e "${GREEN}✓ Version info updated (${VERSION})${NC}"
-    fi
+    echo -e "${GREEN}✓ Version info generated (${VERSION})${NC}"
 }
 
 # Detect current platform
@@ -148,8 +146,8 @@ if [ -f "assets/build/windows/icon.ico" ]; then
 fi
 echo ""
 
-# Update versioninfo.json with current version
-update_versioninfo
+# Generate versioninfo.json with current version
+generate_versioninfo
 echo ""
 
 # Generate Windows resources (icon embedded in exe)

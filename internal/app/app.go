@@ -44,9 +44,9 @@ type Application struct {
 	configStore      *config.Store
 
 	// Security
-	auditLogger      *logger.AuditLogger
-	securityMW       *ipc.SecurityMiddleware
-	secureStore      *security.SecureStore
+	auditLogger *logger.AuditLogger
+	securityMW  *ipc.SecurityMiddleware
+	secureStore *security.SecureStore
 
 	// Window state
 	isVisible bool
