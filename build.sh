@@ -8,8 +8,13 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Version from git tag or default to dev
-VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+# Version from internal/version/version.go (single source of truth)
+VERSION_FILE="internal/version/version.go"
+if [ -f "$VERSION_FILE" ]; then
+    VERSION=$(grep -oP 'var Version = "\K[^"]+' "$VERSION_FILE" 2>/dev/null || echo "dev")
+else
+    VERSION="dev"
+fi
 BIN_DIR="bin"
 FRONTEND_DIR="frontend"
 DIST_DIR="dist"

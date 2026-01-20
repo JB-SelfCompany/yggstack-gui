@@ -4,10 +4,10 @@
 
 # Generated Windows resources
 *.syso
+/cmd/yggstack-gui/versioninfo.json
 
 # Generated icons (copied by build.sh from assets/build)
 /cmd/yggstack-gui/resources/*
-cmd/yggstack-gui/versioninfo.json
 !/cmd/yggstack-gui/resources/.gitkeep
 
 # Frontend
