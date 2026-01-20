@@ -115,7 +115,7 @@ func (t *TrayManager) Initialize() {
 func (t *TrayManager) onReady() {
 	t.logger.Debug("System tray ready")
 
-	// Set initial icon and tooltip
+	// Set initial icon and tooltip (will be updated by syncInitialState)
 	t.setIcon(TrayIconStopped)
 	systray.SetTitle("Yggstack-GUI")
 	systray.SetTooltip("Yggdrasil Network - Stopped")
@@ -155,6 +155,10 @@ func (t *TrayManager) onReady() {
 		t.service.AddStateListener(func(state yggdrasil.ServiceState, info *yggdrasil.NodeInfo) {
 			t.handleStateChange(state, info)
 		})
+
+		// Sync initial state with the actual service state
+		// This is important when tray initializes after service is already running
+		t.syncInitialState()
 	}
 
 	t.mu.Lock()
@@ -162,6 +166,23 @@ func (t *TrayManager) onReady() {
 	t.mu.Unlock()
 
 	t.logger.Info("System tray initialized")
+}
+
+// syncInitialState synchronizes tray state with the actual service state
+// Called once during initialization to handle cases where service started before tray
+func (t *TrayManager) syncInitialState() {
+	if t.service == nil {
+		return
+	}
+
+	state := t.service.GetState()
+	info := t.service.GetNodeInfo()
+
+	t.logger.Info("Syncing initial tray state with service",
+		zap.String("state", state.String()))
+
+	// Update tray to reflect current service state
+	t.handleStateChange(state, info)
 }
 
 // onExit is called when the systray is about to exit
