@@ -12,15 +12,28 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useNodeStore } from '../../store/node'
+import { ipc, Events } from '../../utils/ipc'
 
 const { t } = useI18n()
 const nodeStore = useNodeStore()
 
-const version = '0.1.0'
+const version = ref('...')
 const nodeInfo = computed(() => nodeStore.info || {})
+
+onMounted(async () => {
+  try {
+    const response = await ipc.emit(Events.APP_VERSION)
+    if (response.success && response.data) {
+      version.value = response.data.version
+    }
+  } catch (err) {
+    console.error('Failed to load version:', err)
+    version.value = 'unknown'
+  }
+})
 </script>
 
 <style scoped>

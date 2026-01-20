@@ -10,9 +10,9 @@
   },
   "StringFileInfo": {
     "FileDescription": "Yggdrasil Network Manager",
-    "FileVersion": "0.1.0",
+    "FileVersion": "0.1.0-dirty",
     "ProductName": "Yggstack-GUI",
-    "ProductVersion": "0.1.0",
+    "ProductVersion": "0.1.0-dirty",
     "CompanyName": "JB-SelfCompany",
     "LegalCopyright": "© 2025 JB-SelfCompany"
   },

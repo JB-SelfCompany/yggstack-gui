@@ -106,11 +106,9 @@ func defaultConfig() *Config {
 // DefaultPeers returns default public peers
 func DefaultPeers() []string {
 	return []string{
-		"tls://ygg.mkg20001.io:443",
-		"tls://51.15.118.10:62486",
-		"tcp://193.111.114.28:8080",
-		"tls://ygg.yt:443",
-		"tls://x-mow-1.sergeysedoy97.ru:65535",
+		"tcp://ekb.itrus.su:7991",
+		"tcp://yggno.de:18226",
+		"tcp://srv.itrus.su:7991",
 	}
 }
 

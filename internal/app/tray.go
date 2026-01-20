@@ -35,8 +35,9 @@ type TrayManager struct {
 	mQuit      *systray.MenuItem
 
 	// State
-	isRunning   bool
-	currentIcon TrayIcon
+	isRunning    bool
+	currentIcon  TrayIcon
+	isInitialized bool
 
 	// Callbacks
 	onShowWindow func()
@@ -46,6 +47,13 @@ type TrayManager struct {
 	iconStopped    []byte
 	iconRunning    []byte
 	iconConnecting []byte
+
+	// Keep references to prevent GC from collecting handlers
+	clickHandler      func()
+	dClickHandler     func()
+	showHandler       func()
+	startStopHandler  func()
+	quitHandler       func()
 }
 
 // NewTrayManager creates a new tray manager instance
@@ -92,6 +100,36 @@ func (t *TrayManager) onReady() {
 	systray.SetTitle("Yggstack-GUI")
 	systray.SetTooltip("Yggdrasil Network - Stopped")
 
+	// Setup click handlers for the tray icon itself
+	// Store references to prevent GC from collecting them
+	t.mu.Lock()
+	t.clickHandler = func() {
+		t.logger.Debug("Tray icon clicked")
+		t.mu.RLock()
+		callback := t.onShowWindow
+		t.mu.RUnlock()
+		if callback != nil {
+			cef.QueueAsyncCall(func(id int) {
+				callback()
+			})
+		}
+	}
+	t.dClickHandler = func() {
+		t.logger.Debug("Tray icon double-clicked")
+		t.mu.RLock()
+		callback := t.onShowWindow
+		t.mu.RUnlock()
+		if callback != nil {
+			cef.QueueAsyncCall(func(id int) {
+				callback()
+			})
+		}
+	}
+	t.mu.Unlock()
+
+	systray.SetOnClick(t.clickHandler)
+	systray.SetOnDClick(t.dClickHandler)
+
 	// Create menu items
 	t.mShow = systray.AddMenuItem("Show Window", "Show the main window")
 	systray.AddSeparator()
@@ -109,6 +147,10 @@ func (t *TrayManager) onReady() {
 		})
 	}
 
+	t.mu.Lock()
+	t.isInitialized = true
+	t.mu.Unlock()
+
 	t.logger.Info("System tray initialized")
 }
 
@@ -119,8 +161,11 @@ func (t *TrayManager) onExit() {
 
 // setupMenuClickHandlers sets up click handlers for menu items
 func (t *TrayManager) setupMenuClickHandlers() {
+	// Store handlers to prevent GC from collecting them
+	t.mu.Lock()
+
 	// Show window handler
-	t.mShow.Click(func() {
+	t.showHandler = func() {
 		t.logger.Debug("Tray menu: Show clicked")
 		t.mu.RLock()
 		callback := t.onShowWindow
@@ -131,16 +176,19 @@ func (t *TrayManager) setupMenuClickHandlers() {
 				callback()
 			})
 		}
-	})
+	}
 
 	// Start/Stop handler
-	t.mStartStop.Click(func() {
+	t.startStopHandler = func() {
 		t.logger.Debug("Tray menu: Start/Stop clicked")
-		t.toggleNode()
-	})
+		// Execute toggle on main thread to avoid potential race conditions
+		cef.QueueAsyncCall(func(id int) {
+			t.toggleNode()
+		})
+	}
 
 	// Quit handler
-	t.mQuit.Click(func() {
+	t.quitHandler = func() {
 		t.logger.Debug("Tray menu: Quit clicked")
 		t.mu.RLock()
 		callback := t.onQuit
@@ -151,7 +199,14 @@ func (t *TrayManager) setupMenuClickHandlers() {
 				callback()
 			})
 		}
-	})
+	}
+
+	t.mu.Unlock()
+
+	// Register handlers with menu items
+	t.mShow.Click(t.showHandler)
+	t.mStartStop.Click(t.startStopHandler)
+	t.mQuit.Click(t.quitHandler)
 }
 
 // toggleNode starts or stops the Yggdrasil node

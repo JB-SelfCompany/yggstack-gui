@@ -47,7 +47,7 @@
               <span class="setting-label">{{ t('settings.minimizeToTray') }}</span>
             </div>
             <label class="toggle">
-              <input type="checkbox" v-model="minimizeToTray" @change="updateSetting('minimizeToTray', minimizeToTray)">
+              <input type="checkbox" v-model="minimizeToTray" @change="updateSetting('minimizeToTray', $event.target.checked)">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -60,7 +60,7 @@
               <span class="setting-label">{{ t('settings.startMinimized') }}</span>
             </div>
             <label class="toggle">
-              <input type="checkbox" v-model="startMinimized" @change="updateSetting('startMinimized', startMinimized)">
+              <input type="checkbox" v-model="startMinimized" @change="updateSetting('startMinimized', $event.target.checked)">
               <span class="toggle-slider"></span>
             </label>
           </div>

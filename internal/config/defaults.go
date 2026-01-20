@@ -32,6 +32,8 @@ func DefaultSettings() *Settings {
 // DefaultPeers returns the default list of public peers
 func DefaultPeers() []string {
 	return []string{
-		"tcp://dasabo.zbin.eu:7743",
+		"tcp://ekb.itrus.su:7991",
+		"tcp://yggno.de:18226",
+		"tcp://srv.itrus.su:7991",
 	}
 }

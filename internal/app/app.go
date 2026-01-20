@@ -160,6 +160,9 @@ func (a *Application) SetWindow(window cef.IBrowserWindow) {
 	a.browserWindow = window
 	a.isVisible = true
 
+	// Register core IPC handlers (app:version, app:ready, app:ping)
+	a.ipcBridge.RegisterHandlers()
+
 	// Register IPC handlers with Yggdrasil integration
 	a.ipcHandlers.RegisterAll(a.ipcBridge)
 
