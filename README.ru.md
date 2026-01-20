@@ -62,16 +62,11 @@ Yggstack-GUI — это кроссплатформенное десктопно�
 
 **Windows:**
 ```cmd
-# Распакуйте архив и запустите
 yggstack-gui.exe
 ```
 
 **Linux:**
 ```bash
-# Распакуйте архив
-tar -xzf yggstack-gui-linux-amd64.tar.gz
-
-# Сделайте исполняемым и запустите
 chmod +x yggstack-gui
 ./yggstack-gui
 ```
@@ -80,7 +75,7 @@ chmod +x yggstack-gui
 
 **Требования:**
 - Go 1.22+
-- Node.js 18+
+- Node.js 20.19+ или 22.12+
 - [Energy CLI](https://energye.github.io/) (CEF-фреймворк)
 
 ```bash

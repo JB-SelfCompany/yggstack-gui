@@ -62,16 +62,11 @@ Download the latest release from [GitHub Releases](https://github.com/JB-SelfCom
 
 **Windows:**
 ```cmd
-# Extract archive and run
 yggstack-gui.exe
 ```
 
 **Linux:**
 ```bash
-# Extract archive
-tar -xzf yggstack-gui-linux-amd64.tar.gz
-
-# Make executable and run
 chmod +x yggstack-gui
 ./yggstack-gui
 ```
@@ -80,7 +75,7 @@ chmod +x yggstack-gui
 
 **Prerequisites:**
 - Go 1.22+
-- Node.js 18+
+- Node.js 20.19+ or 22.12+
 - [Energy CLI](https://energye.github.io/) (CEF framework)
 
 ```bash
