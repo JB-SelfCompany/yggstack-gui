@@ -58,6 +58,34 @@ func IsAutoStartEnabled() (bool, error) {
 	}
 }
 
+// SyncAutoStart ensures the autostart configuration points to the current executable
+// This should be called at application startup to handle cases where the app was moved
+// Platform-specific implementation:
+//   - Windows: Updates registry entry if path changed
+//   - Linux: Updates .desktop file if path changed
+// Returns nil if autostart is disabled or sync successful
+func SyncAutoStart() error {
+	switch runtime.GOOS {
+	case "windows":
+		return syncAutoStartPath()
+	case "linux":
+		return syncAutoStartPathLinux()
+	default:
+		return nil // Silently ignore unsupported platforms
+	}
+}
+
+// syncAutoStartPathLinux syncs autostart path on Linux
+func syncAutoStartPathLinux() error {
+	// Linux .desktop files use Exec= which should be updated if needed
+	enabled, err := isAutoStartEnabledLinux()
+	if err != nil || !enabled {
+		return err
+	}
+	// Re-enable to update the path
+	return enableAutoStartLinux()
+}
+
 // getExecutablePath returns the absolute path to the current executable
 // Uses os.Executable() for security - never hardcoded paths
 // Resolves symlinks to get the real path

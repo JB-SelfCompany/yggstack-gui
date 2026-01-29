@@ -1,16 +1,15 @@
 <div align="center">
 
-# Yggstack-GUI
+# 🖥️ Yggstack-GUI
 
-### Графический интерфейс для пользовательского сетевого стека Yggdrasil
+Графический интерфейс для пользовательского сетевого стека Yggdrasil
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](https://go.dev/)
-[![Yggdrasil](https://img.shields.io/badge/Yggdrasil-Network-green)](https://yggdrasil-network.github.io/)
+[![Лицензия](https://img.shields.io/github/license/JB-SelfCompany/yggstack-gui)](LICENSE)
+![Go](https://img.shields.io/badge/go-1.22+-00ADD8.svg)
+![Загрузки](https://img.shields.io/github/downloads/JB-SelfCompany/yggstack-gui/total)
+[![Посетители](https://visitor-badge.laobi.icu/badge?page_id=JB-SelfCompany.yggstack-gui)](https://github.com/JB-SelfCompany/yggstack-gui)
 
-**Подключение к mesh-сети Yggdrasil без TUN-интерфейса и прав администратора**
-
-**Языки:** [English](README.md) | Русский
+**[English](README.md) | [Русский](#)**
 
 [Возможности](#-возможности) • [Установка](#-установка) • [Быстрый старт](#-быстрый-старт) • [Документация](#-документация)
 
@@ -56,42 +55,48 @@ Yggstack-GUI — это кроссплатформенное десктопно�
 
 ## Установка
 
-### Из бинарного файла
+### Из бинарного файла (рекомендуется)
 
 Скачайте последний релиз с [GitHub Releases](https://github.com/JB-SelfCompany/yggstack-gui/releases/latest) для вашей платформы.
 
 **Windows:**
-```cmd
-yggstack-gui.exe
-```
+1. Скачайте `yggstack-gui-x.x.x-windows-amd64.7z`
+2. Распакуйте **все файлы** в любую папку (например, `C:\Programs\yggstack-gui\`)
+3. Запустите `yggstack-gui-windows-amd64.exe`
+
+> **Важно:** Приложению требуются библиотеки CEF (DLL-файлы, папка locales) в той же директории, что и исполняемый файл. Не перемещайте только .exe файл - всегда храните все файлы вместе.
 
 **Linux:**
-```bash
-chmod +x yggstack-gui
-./yggstack-gui
-```
+1. Скачайте `yggstack-gui-x.x.x-linux-amd64.tar.gz`
+2. Распакуйте все файлы: `tar -xzf yggstack-gui-*.tar.gz`
+3. Запустите: `./yggstack-gui-linux-amd64`
 
 ### Из исходного кода
 
 **Требования:**
 - Go 1.22+
 - Node.js 20.19+ или 22.12+
-- [Energy CLI](https://energye.github.io/) (CEF-фреймворк)
+- [Energy CLI](https://energye.github.io/) с установленным CEF-фреймворком
 
 ```bash
 # Клонируйте репозиторий
 git clone https://github.com/JB-SelfCompany/yggstack-gui.git
 cd yggstack-gui
 
-# Установите зависимости фронтенда
-cd frontend && npm install && cd ..
+# Установите CEF-фреймворк (только в первый раз)
+./energy-cli/energy-windows64.exe install  # Windows
+./energy-cli/energy-linux64 install        # Linux
 
-# Соберите фронтенд
-cd frontend && npm run build && cd ..
-
-# Соберите приложение
-go build -o yggstack-gui ./cmd/yggstack-gui
+# Сборка (компилирует фронтенд, копирует CEF, создаёт архив)
+./build.sh
 ```
+
+Скрипт сборки выполнит:
+- Сборку Vue.js фронтенда
+- Компиляцию Go бэкенда с `-tags prod` для портабельного режима
+- Копирование файлов CEF-фреймворка в `bin/`
+- Сжатие бинарников с помощью UPX
+- Создание архива дистрибутива в `dist/`
 
 ---
 
@@ -348,8 +353,6 @@ npm run type-check   # Проверка TypeScript
 
 <div align="center">
 
-**Сделано с любовью для сообщества Yggdrasil Network**
-
-[Наверх](#yggstack-gui)
+Made with ❤️ by <a href="https://github.com/JB-SelfCompany">JB-SelfCompany</a>
 
 </div>

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"time"
 
@@ -104,30 +103,21 @@ func DefaultAuditConfig() AuditConfig {
 }
 
 // GetAuditLogPath returns the default audit log file path
-// Windows: %APPDATA%\Yggstack-GUI\audit.log
-// macOS: ~/Library/Logs/Yggstack-GUI/audit.log
-// Linux: ~/.config/yggstack-gui/audit.log
+// PORTABLE MODE: audit logs are stored in "data/logs" subdirectory next to the executable
 func GetAuditLogPath() string {
-	var baseDir string
-
-	switch runtime.GOOS {
-	case "windows":
-		baseDir = os.Getenv("APPDATA")
-		if baseDir == "" {
-			baseDir = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Roaming")
-		}
-		baseDir = filepath.Join(baseDir, "Yggstack-GUI")
-	case "darwin":
-		baseDir = filepath.Join(os.Getenv("HOME"), "Library", "Logs", "Yggstack-GUI")
-	default: // linux and others
-		configHome := os.Getenv("XDG_CONFIG_HOME")
-		if configHome == "" {
-			configHome = filepath.Join(os.Getenv("HOME"), ".config")
-		}
-		baseDir = filepath.Join(configHome, "yggstack-gui")
+	// Get executable directory for portable mode
+	exePath, err := os.Executable()
+	if err != nil {
+		// Fallback to current working directory
+		cwd, _ := os.Getwd()
+		return filepath.Join(cwd, "data", "logs", "audit.log")
 	}
-
-	return filepath.Join(baseDir, "audit.log")
+	// Resolve symlinks to get the real path
+	realPath, err := filepath.EvalSymlinks(exePath)
+	if err != nil {
+		return filepath.Join(filepath.Dir(exePath), "data", "logs", "audit.log")
+	}
+	return filepath.Join(filepath.Dir(realPath), "data", "logs", "audit.log")
 }
 
 // NewAuditLogger creates a new audit logger

@@ -177,8 +177,58 @@ fi
 
 # Build
 echo -e "${YELLOW}Building ${GOOS}/${GOARCH}...${NC}"
-go build -trimpath -ldflags "${LDFLAGS}" -o "${BIN_DIR}/${OUTPUT_NAME}" ./cmd/yggstack-gui
+go build -tags prod -trimpath -ldflags "${LDFLAGS}" -o "${BIN_DIR}/${OUTPUT_NAME}" ./cmd/yggstack-gui
 echo -e "${GREEN}✓ Built ${OUTPUT_NAME}${NC}"
+
+# Copy CEF framework files to bin directory
+echo ""
+echo -e "${YELLOW}Copying CEF framework files...${NC}"
+if [ "$GOOS" = "windows" ]; then
+    CEF_DIR="energy/CEF-136_WINDOWS_64"
+elif [ "$GOOS" = "linux" ]; then
+    CEF_DIR="energy/CEF-136_LINUX_64"
+elif [ "$GOOS" = "darwin" ]; then
+    CEF_DIR="energy/CEF-136_MACOSX_64"
+fi
+
+if [ -d "$CEF_DIR" ]; then
+    # Copy all CEF files (dll, pak, dat, bin, json) and locales directory
+    cp -r "${CEF_DIR}"/*.dll "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/*.so "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/*.dylib "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/*.pak "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/*.dat "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/*.bin "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/*.json "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/locales "${BIN_DIR}/" 2>/dev/null || true
+    echo -e "${GREEN}✓ CEF framework copied to ${BIN_DIR}/${NC}"
+else
+    echo -e "${RED}Error: CEF framework not found at ${CEF_DIR}${NC}"
+    echo -e "${RED}Please install CEF using: ./energy-cli/energy-windows64.exe install${NC}"
+    exit 1
+fi
+
+# Compress binaries with UPX (if available)
+echo ""
+echo -e "${YELLOW}Compressing binaries with UPX...${NC}"
+if [ -f "energy/upx/upx.exe" ] && [ "$GOOS" = "windows" ]; then
+    # Compress the main executable
+    energy/upx/upx.exe -9 --best --lzma "${BIN_DIR}/${OUTPUT_NAME}" 2>/dev/null || true
+    # Compress liblcl.dll (usually compresses well)
+    energy/upx/upx.exe -9 --best --lzma "${BIN_DIR}/liblcl.dll" 2>/dev/null || true
+    echo -e "${GREEN}✓ Binaries compressed${NC}"
+else
+    echo -e "${YELLOW}⚠ UPX not found, skipping compression${NC}"
+fi
+
+# Clean up runtime data before archiving
+echo ""
+echo -e "${YELLOW}Cleaning runtime data...${NC}"
+rm -rf "${BIN_DIR}/data" 2>/dev/null || true
+rm -rf "${BIN_DIR}/cache" 2>/dev/null || true
+rm -rf "${BIN_DIR}/GPUCache" 2>/dev/null || true
+rm -rf "${BIN_DIR}/blob_storage" 2>/dev/null || true
+echo -e "${GREEN}✓ Runtime data cleaned${NC}"
 
 # Create archive
 echo ""
@@ -186,12 +236,20 @@ echo -e "${YELLOW}Creating distribution archive...${NC}"
 ARCHIVE_BASE="yggstack-gui-${VERSION}-${GOOS}-${GOARCH}"
 
 if [ "$GOOS" = "windows" ]; then
-    if command -v zip &> /dev/null; then
-        (cd "${BIN_DIR}" && zip -q "../${DIST_DIR}/${ARCHIVE_BASE}.zip" "${OUTPUT_NAME}")
+    # Use 7z format for better compression
+    if [ -f "energy/7z/7za.exe" ]; then
+        (cd "${BIN_DIR}" && ../energy/7z/7za.exe a -t7z -mx=5 -mmt=on -xr!data -xr!cache -xr!GPUCache -xr!blob_storage "../${DIST_DIR}/${ARCHIVE_BASE}.7z" . > /dev/null)
+        echo -e "${GREEN}✓ Created ${ARCHIVE_BASE}.7z${NC}"
+    elif command -v zip &> /dev/null; then
+        (cd "${BIN_DIR}" && zip -rq "../${DIST_DIR}/${ARCHIVE_BASE}.zip" .)
         echo -e "${GREEN}✓ Created ${ARCHIVE_BASE}.zip${NC}"
+    else
+        # PowerShell fallback
+        powershell -Command "Compress-Archive -Path '${BIN_DIR}/*' -DestinationPath '${DIST_DIR}/${ARCHIVE_BASE}.zip' -Force"
+        echo -e "${GREEN}✓ Created ${ARCHIVE_BASE}.zip (PowerShell)${NC}"
     fi
 else
-    tar -czf "${DIST_DIR}/${ARCHIVE_BASE}.tar.gz" -C "${BIN_DIR}" "${OUTPUT_NAME}"
+    tar -czf "${DIST_DIR}/${ARCHIVE_BASE}.tar.gz" -C "${BIN_DIR}" .
     echo -e "${GREEN}✓ Created ${ARCHIVE_BASE}.tar.gz${NC}"
 fi
 

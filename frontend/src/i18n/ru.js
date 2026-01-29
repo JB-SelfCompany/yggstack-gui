@@ -170,8 +170,11 @@ export default {
       system: 'Системная'
     },
     autostart: 'Запускать при старте системы',
-    minimizeToTray: 'Сворачивать в трей',
-    startMinimized: 'Запускать свёрнутым',
+    autostartDesc: 'Автоматически запускать при входе в систему',
+    closeToTray: 'Закрывать в трей',
+    closeToTrayDesc: 'Сворачивать в системный трей вместо закрытия приложения',
+    startHidden: 'Запускать скрытым',
+    startHiddenDesc: 'Запускать в системном трее без показа главного окна',
     logLevel: 'Уровень логов',
     logLevels: {
       debug: 'Отладка',

@@ -193,3 +193,7 @@ func disableAutoStartWindows() error {
 func isAutoStartEnabledWindows() (bool, error) {
 	return false, fmt.Errorf("Windows autostart not available on Linux")
 }
+
+func syncAutoStartPath() error {
+	return fmt.Errorf("Windows autostart sync not available on Linux")
+}

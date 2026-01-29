@@ -443,6 +443,15 @@ func (h *Handlers) handleSettingsGet(req *Request) *Response {
 	}
 
 	settings := h.configStore.Get()
+
+	// Get actual autostart state from system (registry/desktop file)
+	// This is important because user may have changed autostart outside the app
+	autostartEnabled, err := platform.IsAutoStartEnabled()
+	if err != nil {
+		h.logger.Warn("Failed to check autostart status", "error", err)
+		autostartEnabled = settings.App.Autostart // Fallback to saved value
+	}
+
 	return &Response{
 		Success: true,
 		Data: map[string]interface{}{
@@ -450,7 +459,7 @@ func (h *Handlers) handleSettingsGet(req *Request) *Response {
 			"theme":          settings.App.Theme,
 			"minimizeToTray": settings.App.MinimizeToTray,
 			"startMinimized": settings.App.StartMinimized,
-			"autostart":      settings.App.Autostart,
+			"autostart":      autostartEnabled,
 			"logLevel":       settings.App.LogLevel,
 			"proxy": map[string]interface{}{
 				"enabled":       settings.Proxy.Enabled,

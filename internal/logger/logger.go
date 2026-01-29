@@ -3,7 +3,6 @@ package logger
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -240,29 +239,20 @@ func (w *logWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// GetLogFilePath returns the default log file path for the current platform
-// Windows: %APPDATA%\Yggstack-GUI\yggstack-gui.log
-// macOS: ~/Library/Logs/Yggstack-GUI/yggstack-gui.log
-// Linux: ~/.config/yggstack-gui/yggstack-gui.log
+// GetLogFilePath returns the default log file path
+// PORTABLE MODE: logs are stored in "data/logs" subdirectory next to the executable
 func GetLogFilePath() string {
-	var baseDir string
-
-	switch runtime.GOOS {
-	case "windows":
-		baseDir = os.Getenv("APPDATA")
-		if baseDir == "" {
-			baseDir = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Roaming")
-		}
-		baseDir = filepath.Join(baseDir, "Yggstack-GUI")
-	case "darwin":
-		baseDir = filepath.Join(os.Getenv("HOME"), "Library", "Logs", "Yggstack-GUI")
-	default: // linux and others
-		configHome := os.Getenv("XDG_CONFIG_HOME")
-		if configHome == "" {
-			configHome = filepath.Join(os.Getenv("HOME"), ".config")
-		}
-		baseDir = filepath.Join(configHome, "yggstack-gui")
+	// Get executable directory for portable mode
+	exePath, err := os.Executable()
+	if err != nil {
+		// Fallback to current working directory
+		cwd, _ := os.Getwd()
+		return filepath.Join(cwd, "data", "logs", "yggstack-gui.log")
 	}
-
-	return filepath.Join(baseDir, "yggstack-gui.log")
+	// Resolve symlinks to get the real path
+	realPath, err := filepath.EvalSymlinks(exePath)
+	if err != nil {
+		return filepath.Join(filepath.Dir(exePath), "data", "logs", "yggstack-gui.log")
+	}
+	return filepath.Join(filepath.Dir(realPath), "data", "logs", "yggstack-gui.log")
 }

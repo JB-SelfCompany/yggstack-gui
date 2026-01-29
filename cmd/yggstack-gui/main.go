@@ -8,11 +8,15 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/energye/energy/v2/cef"
+	"github.com/energye/energy/v2/cef/process"
 	"github.com/energye/golcl/lcl"
+	"github.com/energye/golcl/lcl/types"
 	"github.com/JB-SelfCompany/yggstack-gui/internal/app"
 	"github.com/JB-SelfCompany/yggstack-gui/internal/logger"
+	"github.com/JB-SelfCompany/yggstack-gui/internal/platform"
 	"github.com/JB-SelfCompany/yggstack-gui/internal/version"
 	"github.com/JB-SelfCompany/yggstack-gui/internal/web"
 )
@@ -21,6 +25,20 @@ import (
 var resources embed.FS
 
 func main() {
+	// Initialize CEF globally first - required for all processes
+	cef.GlobalInit(nil, &resources)
+
+	// Check if this is a CEF subprocess (renderer, GPU, utility, etc.)
+	// Subprocesses should only run CEF without initializing app services
+	if !process.Args.IsMain() {
+		// This is a subprocess - just run CEF and exit
+		cefApp := cef.NewApplication()
+		cef.Run(cefApp)
+		return
+	}
+
+	// === Main process initialization below ===
+
 	// Check if app should start minimized (from autostart)
 	startMinimized := false
 	for _, arg := range os.Args[1:] {
@@ -28,6 +46,13 @@ func main() {
 			startMinimized = true
 			break
 		}
+	}
+
+	// If starting from autostart (minimized), add a small delay
+	// Task Scheduler already adds 30 second delay, but this extra delay
+	// ensures CEF has stable graphics context after window manager is ready
+	if startMinimized {
+		time.Sleep(1 * time.Second)
 	}
 
 	// Initialize logger with file output
@@ -43,6 +68,13 @@ func main() {
 		log.Info("Starting Yggstack-GUI in minimized mode (from autostart)", "version", version.Version)
 	} else {
 		log.Info("Starting Yggstack-GUI", "version", version.Version)
+	}
+
+	// Sync autostart path if autostart is enabled
+	// This ensures the registry/desktop file points to the current executable location
+	// (handles cases where the app was moved after enabling autostart)
+	if err := platform.SyncAutoStart(); err != nil {
+		log.Warn("Failed to sync autostart path", "error", err)
 	}
 
 	// Determine URL: use dev server or embedded assets
@@ -77,9 +109,6 @@ func main() {
 		log.Warn("Failed to load app icon", "error", iconErr)
 	}
 
-	// Initialize CEF with embedded resources for icon support
-	cef.GlobalInit(nil, &resources)
-
 	// Create CEF application
 	cefApp := cef.NewApplication()
 
@@ -91,6 +120,12 @@ func main() {
 	cef.BrowserWindow.Config.EnableCenterWindow = true
 	cef.BrowserWindow.Config.EnableResize = true
 	cef.BrowserWindow.Config.Icon = iconPath
+
+	// Set window initial state to minimized if starting minimized
+	// This prevents the window from flashing before being hidden
+	if startMinimized {
+		cef.BrowserWindow.Config.WindowInitState = types.WsMinimized
+	}
 
 	// Create application instance for services
 	application := app.New(app.Config{
@@ -105,6 +140,12 @@ func main() {
 
 	// Setup browser initialization callback
 	cef.BrowserWindow.SetBrowserInit(func(event *cef.BrowserEvent, window cef.IBrowserWindow) {
+		// If starting minimized, hide window immediately before any other processing
+		// This prevents the window from being visible even briefly
+		if startMinimized {
+			window.Hide()
+		}
+
 		// Set window reference in application
 		application.SetWindow(window)
 

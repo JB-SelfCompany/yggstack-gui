@@ -40,27 +40,43 @@
           </div>
         </div>
 
-        <!-- Minimize to Tray -->
+        <!-- Run at startup -->
         <div class="card">
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-label">{{ t('settings.minimizeToTray') }}</span>
+              <span class="setting-label">{{ t('settings.autostart') }}</span>
+              <span class="setting-description">{{ t('settings.autostartDesc') }}</span>
             </div>
-            <label class="toggle">
-              <input type="checkbox" v-model="minimizeToTray" @change="updateSetting('minimizeToTray', $event.target.checked)">
+            <label class="toggle" :class="{ 'no-transition': !isLoaded }">
+              <input type="checkbox" v-model="autostart" @change="updateSetting('autostart', $event.target.checked)">
               <span class="toggle-slider"></span>
             </label>
           </div>
         </div>
 
-        <!-- Start Minimized -->
+        <!-- Start hidden in tray -->
         <div class="card">
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-label">{{ t('settings.startMinimized') }}</span>
+              <span class="setting-label">{{ t('settings.startHidden') }}</span>
+              <span class="setting-description">{{ t('settings.startHiddenDesc') }}</span>
             </div>
-            <label class="toggle">
+            <label class="toggle" :class="{ 'no-transition': !isLoaded }">
               <input type="checkbox" v-model="startMinimized" @change="updateSetting('startMinimized', $event.target.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Close to tray -->
+        <div class="card">
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">{{ t('settings.closeToTray') }}</span>
+              <span class="setting-description">{{ t('settings.closeToTrayDesc') }}</span>
+            </div>
+            <label class="toggle" :class="{ 'no-transition': !isLoaded }">
+              <input type="checkbox" v-model="minimizeToTray" @change="updateSetting('minimizeToTray', $event.target.checked)">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -121,8 +137,10 @@ const language = ref('en')
 const theme = ref('system')
 const minimizeToTray = ref(true)
 const startMinimized = ref(false)
+const autostart = ref(false)
 const logLevel = ref('info')
 const appVersion = ref('')
+const isLoaded = ref(false) // Flag to disable animation on initial load
 
 onMounted(async () => {
   // Load app version
@@ -144,6 +162,7 @@ onMounted(async () => {
       theme.value = response.data.theme || 'system'
       minimizeToTray.value = response.data.minimizeToTray ?? true
       startMinimized.value = response.data.startMinimized ?? false
+      autostart.value = response.data.autostart ?? false
       logLevel.value = response.data.logLevel || 'info'
 
       // Sync with UI store
@@ -156,6 +175,11 @@ onMounted(async () => {
     language.value = uiStore.language
     theme.value = uiStore.theme
   }
+
+  // Enable animations after initial load (next tick to ensure DOM is updated)
+  setTimeout(() => {
+    isLoaded.value = true
+  }, 50)
 })
 
 // Sync with store changes
@@ -386,6 +410,12 @@ const openRepo = () => {
 
 .toggle input:checked + .toggle-slider:before {
   transform: translateX(22px);
+}
+
+/* Disable transition on initial load to prevent animation flash */
+.toggle.no-transition .toggle-slider,
+.toggle.no-transition .toggle-slider:before {
+  transition: none;
 }
 
 @media (max-width: 600px) {

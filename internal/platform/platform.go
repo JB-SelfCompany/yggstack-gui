@@ -80,79 +80,41 @@ func getHomeDir() string {
 	return home
 }
 
-// getDataDir returns the platform-specific data directory
-// Windows: %APPDATA%\Yggstack-GUI (Roaming AppData, like Tyr Desktop)
-// macOS: ~/Library/Application Support/Yggstack-GUI
-// Linux: ~/.config/yggstack-gui (XDG_CONFIG_HOME)
+// getExecutableDir returns the directory where the executable is located
+// Used for portable mode - all config/data files are stored next to the executable
+func getExecutableDir() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		// Fallback to current working directory
+		cwd, _ := os.Getwd()
+		return cwd
+	}
+	// Resolve symlinks to get the real path
+	realPath, err := filepath.EvalSymlinks(exePath)
+	if err != nil {
+		return filepath.Dir(exePath)
+	}
+	return filepath.Dir(realPath)
+}
+
+// getDataDir returns the data directory for the application
+// PORTABLE MODE: All files are stored in "data" subdirectory next to the executable
+// This makes the application fully portable - just copy the folder to another location
 func getDataDir(osType OS) string {
-	switch osType {
-	case Windows:
-		// %APPDATA%\Yggstack-GUI (Roaming AppData)
-		appData := os.Getenv("APPDATA")
-		if appData == "" {
-			appData = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Roaming")
-		}
-		return filepath.Join(appData, "Yggstack-GUI")
-
-	case Darwin:
-		// ~/Library/Application Support/Yggstack-GUI
-		return filepath.Join(getHomeDir(), "Library", "Application Support", "Yggstack-GUI")
-
-	case Linux:
-		// ~/.config/yggstack-gui (XDG_CONFIG_HOME)
-		configHome := os.Getenv("XDG_CONFIG_HOME")
-		if configHome == "" {
-			configHome = filepath.Join(getHomeDir(), ".config")
-		}
-		return filepath.Join(configHome, "yggstack-gui")
-
-	default:
-		return filepath.Join(getHomeDir(), ".yggstack-gui")
-	}
+	// Portable mode: use directory where executable is located
+	return filepath.Join(getExecutableDir(), "data")
 }
 
-// getCacheDir returns the platform-specific cache directory
+// getCacheDir returns the cache directory for the application
+// PORTABLE MODE: cache is stored in "data/cache" subdirectory next to the executable
 func getCacheDir(osType OS) string {
-	switch osType {
-	case Windows:
-		// %APPDATA%\Yggstack-GUI\cache
-		return filepath.Join(getDataDir(osType), "cache")
-
-	case Darwin:
-		// ~/Library/Caches/Yggstack-GUI
-		return filepath.Join(getHomeDir(), "Library", "Caches", "Yggstack-GUI")
-
-	case Linux:
-		// ~/.cache/yggstack-gui (XDG_CACHE_HOME)
-		cacheHome := os.Getenv("XDG_CACHE_HOME")
-		if cacheHome == "" {
-			cacheHome = filepath.Join(getHomeDir(), ".cache")
-		}
-		return filepath.Join(cacheHome, "yggstack-gui")
-
-	default:
-		return filepath.Join(getHomeDir(), ".yggstack-gui", "cache")
-	}
+	return filepath.Join(getDataDir(osType), "cache")
 }
 
-// getLogDir returns the platform-specific log directory
+// getLogDir returns the log directory for the application
+// PORTABLE MODE: logs are stored in "data/logs" subdirectory next to the executable
 func getLogDir(osType OS) string {
-	switch osType {
-	case Windows:
-		// %APPDATA%\Yggstack-GUI\logs
-		return filepath.Join(getDataDir(osType), "logs")
-
-	case Darwin:
-		// ~/Library/Logs/Yggstack-GUI
-		return filepath.Join(getHomeDir(), "Library", "Logs", "Yggstack-GUI")
-
-	case Linux:
-		// ~/.config/yggstack-gui/logs (in config dir)
-		return filepath.Join(getDataDir(osType), "logs")
-
-	default:
-		return filepath.Join(getHomeDir(), ".yggstack-gui", "logs")
-	}
+	return filepath.Join(getDataDir(osType), "logs")
 }
 
 // EnsureDirectories creates all necessary application directories

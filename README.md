@@ -1,16 +1,15 @@
 <div align="center">
 
-# Yggstack-GUI
+# 🖥️ Yggstack-GUI
 
-### Desktop GUI for Yggdrasil Userspace Network Stack
+Desktop GUI for Yggdrasil Userspace Network Stack
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](https://go.dev/)
-[![Yggdrasil](https://img.shields.io/badge/Yggdrasil-Network-green)](https://yggdrasil-network.github.io/)
+[![License](https://img.shields.io/github/license/JB-SelfCompany/yggstack-gui)](LICENSE)
+![Go](https://img.shields.io/badge/go-1.22+-00ADD8.svg)
+![Downloads](https://img.shields.io/github/downloads/JB-SelfCompany/yggstack-gui/total)
+[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=JB-SelfCompany.yggstack-gui)](https://github.com/JB-SelfCompany/yggstack-gui)
 
-**Connect to Yggdrasil mesh network without TUN interface or admin privileges**
-
-**Languages:** English | [Русский](README.ru.md)
+**[English](#) | [Русский](README.ru.md)**
 
 [Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Documentation](#-documentation)
 
@@ -56,42 +55,48 @@ The application runs entirely in userspace using gVisor's netstack, making it pe
 
 ## Installation
 
-### From Binary
+### From Binary (Recommended)
 
 Download the latest release from [GitHub Releases](https://github.com/JB-SelfCompany/yggstack-gui/releases/latest) for your platform.
 
 **Windows:**
-```cmd
-yggstack-gui.exe
-```
+1. Download `yggstack-gui-x.x.x-windows-amd64.7z`
+2. Extract **all files** to any folder (e.g., `C:\Programs\yggstack-gui\`)
+3. Run `yggstack-gui-windows-amd64.exe`
+
+> **Important:** The application requires CEF libraries (DLL files, locales folder) to be in the same directory as the executable. Do not move only the .exe file - always keep all files together.
 
 **Linux:**
-```bash
-chmod +x yggstack-gui
-./yggstack-gui
-```
+1. Download `yggstack-gui-x.x.x-linux-amd64.tar.gz`
+2. Extract all files: `tar -xzf yggstack-gui-*.tar.gz`
+3. Run: `./yggstack-gui-linux-amd64`
 
 ### From Source
 
 **Prerequisites:**
 - Go 1.22+
 - Node.js 20.19+ or 22.12+
-- [Energy CLI](https://energye.github.io/) (CEF framework)
+- [Energy CLI](https://energye.github.io/) with CEF framework installed
 
 ```bash
 # Clone repository
 git clone https://github.com/JB-SelfCompany/yggstack-gui.git
 cd yggstack-gui
 
-# Install frontend dependencies
-cd frontend && npm install && cd ..
+# Install CEF framework (first time only)
+./energy-cli/energy-windows64.exe install  # Windows
+./energy-cli/energy-linux64 install        # Linux
 
-# Build frontend
-cd frontend && npm run build && cd ..
-
-# Build application
-go build -o yggstack-gui ./cmd/yggstack-gui
+# Build (compiles frontend, copies CEF, creates archive)
+./build.sh
 ```
+
+The build script will:
+- Build the Vue.js frontend
+- Compile the Go backend with `-tags prod` for portable mode
+- Copy CEF framework files to `bin/`
+- Compress binaries with UPX
+- Create distribution archive in `dist/`
 
 ---
 
@@ -348,8 +353,6 @@ This project is licensed under the **GNU General Public License v3.0** - see the
 
 <div align="center">
 
-**Made with love for the Yggdrasil Network community**
-
-[Back to Top](#yggstack-gui)
+Made with ❤️ by <a href="https://github.com/JB-SelfCompany">JB-SelfCompany</a>
 
 </div>

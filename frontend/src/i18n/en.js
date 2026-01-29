@@ -169,9 +169,12 @@ export default {
       dark: 'Dark',
       system: 'System'
     },
-    autostart: 'Start with system',
-    minimizeToTray: 'Minimize to tray',
-    startMinimized: 'Start minimized',
+    autostart: 'Run at startup',
+    autostartDesc: 'Automatically launch when you log in to the system',
+    closeToTray: 'Close to tray',
+    closeToTrayDesc: 'Hide to system tray instead of closing the application',
+    startHidden: 'Start hidden',
+    startHiddenDesc: 'Launch in system tray without showing the main window',
     logLevel: 'Log Level',
     logLevels: {
       debug: 'Debug',
