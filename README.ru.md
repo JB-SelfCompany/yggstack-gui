@@ -76,18 +76,53 @@ Yggstack-GUI — это кроссплатформенное десктопно�
 **Требования:**
 - Go 1.22+
 - Node.js 20.19+ или 22.12+
-- [Energy CLI](https://energye.github.io/) с установленным CEF-фреймворком
+- CEF-фреймворк и библиотека liblcl
 
 ```bash
 # Клонируйте репозиторий
 git clone https://github.com/JB-SelfCompany/yggstack-gui.git
 cd yggstack-gui
+```
 
-# Установите CEF-фреймворк (только в первый раз)
-./energy-cli/energy-windows64.exe install  # Windows
-./energy-cli/energy-linux64 install        # Linux
+**Установка CEF-фреймворка:**
 
-# Сборка (компилирует фронтенд, копирует CEF, создаёт архив)
+<details>
+<summary><b>Windows</b></summary>
+
+```bash
+# Используйте Energy CLI
+./energy-cli/energy-windows64.exe install
+```
+</details>
+
+<details>
+<summary><b>Linux (ручная установка)</b></summary>
+
+```bash
+# Установите зависимости
+sudo apt install libgtk-3-0 libnss3 libatk-bridge2.0-0 libxkbcommon0 libgbm1 libxcomposite1 libxdamage1 libxrandr2 libcups2 libasound2
+
+# Создайте директорию CEF
+mkdir -p energy/CEF-109_LINUX_64
+cd energy/CEF-109_LINUX_64
+
+# Скачайте CEF 109 с Spotify CDN
+wget "https://cef-builds.spotifycdn.com/cef_binary_109.1.18%2Bgf1c41e4%2Bchromium-109.0.5414.120_linux64_minimal.tar.bz2" -O cef.tar.bz2
+tar -xjf cef.tar.bz2 --strip-components=1
+rm cef.tar.bz2
+
+# Скачайте liblcl-109
+wget "https://github.com/energye/liblcl/releases/download/v2.5.4/liblcl-109-GTK3.Linux64.zip"
+unzip liblcl-109-GTK3.Linux64.zip
+rm liblcl-109-GTK3.Linux64.zip
+
+cd ../..
+```
+</details>
+
+**Сборка:**
+
+```bash
 ./build.sh
 ```
 
@@ -95,7 +130,7 @@ cd yggstack-gui
 - Сборку Vue.js фронтенда
 - Компиляцию Go бэкенда с `-tags prod` для портабельного режима
 - Копирование файлов CEF-фреймворка в `bin/`
-- Сжатие бинарников с помощью UPX
+- Сжатие бинарников с помощью UPX (если доступен)
 - Создание архива дистрибутива в `dist/`
 
 ---

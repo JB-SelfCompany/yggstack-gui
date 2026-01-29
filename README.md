@@ -76,18 +76,53 @@ Download the latest release from [GitHub Releases](https://github.com/JB-SelfCom
 **Prerequisites:**
 - Go 1.22+
 - Node.js 20.19+ or 22.12+
-- [Energy CLI](https://energye.github.io/) with CEF framework installed
+- CEF framework and liblcl library
 
 ```bash
 # Clone repository
 git clone https://github.com/JB-SelfCompany/yggstack-gui.git
 cd yggstack-gui
+```
 
-# Install CEF framework (first time only)
-./energy-cli/energy-windows64.exe install  # Windows
-./energy-cli/energy-linux64 install        # Linux
+**Install CEF framework:**
 
-# Build (compiles frontend, copies CEF, creates archive)
+<details>
+<summary><b>Windows</b></summary>
+
+```bash
+# Use Energy CLI
+./energy-cli/energy-windows64.exe install
+```
+</details>
+
+<details>
+<summary><b>Linux (manual installation)</b></summary>
+
+```bash
+# Install dependencies
+sudo apt install libgtk-3-0 libnss3 libatk-bridge2.0-0 libxkbcommon0 libgbm1 libxcomposite1 libxdamage1 libxrandr2 libcups2 libasound2
+
+# Create CEF directory
+mkdir -p energy/CEF-109_LINUX_64
+cd energy/CEF-109_LINUX_64
+
+# Download CEF 109 from Spotify CDN
+wget "https://cef-builds.spotifycdn.com/cef_binary_109.1.18%2Bgf1c41e4%2Bchromium-109.0.5414.120_linux64_minimal.tar.bz2" -O cef.tar.bz2
+tar -xjf cef.tar.bz2 --strip-components=1
+rm cef.tar.bz2
+
+# Download liblcl-109
+wget "https://github.com/energye/liblcl/releases/download/v2.5.4/liblcl-109-GTK3.Linux64.zip"
+unzip liblcl-109-GTK3.Linux64.zip
+rm liblcl-109-GTK3.Linux64.zip
+
+cd ../..
+```
+</details>
+
+**Build:**
+
+```bash
 ./build.sh
 ```
 
@@ -95,7 +130,7 @@ The build script will:
 - Build the Vue.js frontend
 - Compile the Go backend with `-tags prod` for portable mode
 - Copy CEF framework files to `bin/`
-- Compress binaries with UPX
+- Compress binaries with UPX (if available)
 - Create distribution archive in `dist/`
 
 ---

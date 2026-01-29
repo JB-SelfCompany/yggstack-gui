@@ -183,28 +183,53 @@ echo -e "${GREEN}✓ Built ${OUTPUT_NAME}${NC}"
 # Copy CEF framework files to bin directory
 echo ""
 echo -e "${YELLOW}Copying CEF framework files...${NC}"
+# Find CEF directory (local first, then ~/.energy)
+# Note: Linux uses CEF 109 (liblcl-109 available), Windows uses CEF 136
 if [ "$GOOS" = "windows" ]; then
     CEF_DIR="energy/CEF-136_WINDOWS_64"
+    [ ! -d "$CEF_DIR" ] && CEF_DIR="$HOME/.energy/cef/CEF-136_WINDOWS_64"
 elif [ "$GOOS" = "linux" ]; then
-    CEF_DIR="energy/CEF-136_LINUX_64"
+    # Try CEF 109 first (has liblcl support), then 136, then ~/.energy
+    for dir in "energy/CEF-109_LINUX_64" "energy/CEF-136_LINUX_64" "$HOME/.energy/cef/CEF-109_LINUX_64" "$HOME/.energy/CEF109_LINUX64"; do
+        if [ -d "$dir" ]; then
+            CEF_DIR="$dir"
+            break
+        fi
+    done
+    [ -z "$CEF_DIR" ] && CEF_DIR="energy/CEF-109_LINUX_64"
 elif [ "$GOOS" = "darwin" ]; then
-    CEF_DIR="energy/CEF-136_MACOSX_64"
+    CEF_DIR="energy/CEF-109_MACOSX_64"
+    [ ! -d "$CEF_DIR" ] && CEF_DIR="$HOME/.energy/cef/CEF-109_MACOSX_64"
 fi
 
 if [ -d "$CEF_DIR" ]; then
-    # Copy all CEF files (dll, pak, dat, bin, json) and locales directory
+    # Copy all CEF files (dll/so/dylib, pak, dat, bin, json) and locales directory
     cp -r "${CEF_DIR}"/*.dll "${BIN_DIR}/" 2>/dev/null || true
     cp -r "${CEF_DIR}"/*.so "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/*.so.* "${BIN_DIR}/" 2>/dev/null || true
     cp -r "${CEF_DIR}"/*.dylib "${BIN_DIR}/" 2>/dev/null || true
     cp -r "${CEF_DIR}"/*.pak "${BIN_DIR}/" 2>/dev/null || true
     cp -r "${CEF_DIR}"/*.dat "${BIN_DIR}/" 2>/dev/null || true
     cp -r "${CEF_DIR}"/*.bin "${BIN_DIR}/" 2>/dev/null || true
     cp -r "${CEF_DIR}"/*.json "${BIN_DIR}/" 2>/dev/null || true
     cp -r "${CEF_DIR}"/locales "${BIN_DIR}/" 2>/dev/null || true
+    # Linux: copy swiftshader and additional libs
+    cp -r "${CEF_DIR}"/swiftshader "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/libEGL.so "${BIN_DIR}/" 2>/dev/null || true
+    cp -r "${CEF_DIR}"/libGLESv2.so "${BIN_DIR}/" 2>/dev/null || true
+    # Copy liblcl from ~/.energy if not in CEF_DIR
+    if [ "$GOOS" = "linux" ] && [ ! -f "${BIN_DIR}/liblcl.so" ]; then
+        cp "$HOME/.energy/liblcl.so" "${BIN_DIR}/" 2>/dev/null || true
+    elif [ "$GOOS" = "darwin" ] && [ ! -f "${BIN_DIR}/liblcl.dylib" ]; then
+        cp "$HOME/.energy/liblcl.dylib" "${BIN_DIR}/" 2>/dev/null || true
+    fi
     echo -e "${GREEN}✓ CEF framework copied to ${BIN_DIR}/${NC}"
 else
-    echo -e "${RED}Error: CEF framework not found at ${CEF_DIR}${NC}"
-    echo -e "${RED}Please install CEF using: ./energy-cli/energy-windows64.exe install${NC}"
+    echo -e "${RED}Error: CEF framework not found${NC}"
+    echo -e "${RED}Searched: ${CEF_DIR} and ~/.energy/cef/${NC}"
+    echo -e "${YELLOW}Install CEF using:${NC}"
+    echo -e "${YELLOW}  go install github.com/energye/energy/v2/cmd/energy@latest${NC}"
+    echo -e "${YELLOW}  energy install${NC}"
     exit 1
 fi
 
@@ -212,10 +237,14 @@ fi
 echo ""
 echo -e "${YELLOW}Compressing binaries with UPX...${NC}"
 if [ -f "energy/upx/upx.exe" ] && [ "$GOOS" = "windows" ]; then
-    # Compress the main executable
+    # Windows: use bundled UPX
     energy/upx/upx.exe -9 --best --lzma "${BIN_DIR}/${OUTPUT_NAME}" 2>/dev/null || true
-    # Compress liblcl.dll (usually compresses well)
     energy/upx/upx.exe -9 --best --lzma "${BIN_DIR}/liblcl.dll" 2>/dev/null || true
+    echo -e "${GREEN}✓ Binaries compressed${NC}"
+elif command -v upx &> /dev/null && [ "$GOOS" = "linux" ]; then
+    # Linux: use system UPX
+    upx -9 --best --lzma "${BIN_DIR}/${OUTPUT_NAME}" 2>/dev/null || true
+    upx -9 --best --lzma "${BIN_DIR}/liblcl.so" 2>/dev/null || true
     echo -e "${GREEN}✓ Binaries compressed${NC}"
 else
     echo -e "${YELLOW}⚠ UPX not found, skipping compression${NC}"

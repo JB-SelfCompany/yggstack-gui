@@ -25,10 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build System Overhaul** - Improved `build.sh` for proper portable distribution:
   - Added `-tags prod` flag for portable mode (CEF lookup in exe directory)
   - Added automatic CEF framework copying (DLLs, locales, resources)
-  - Added UPX compression for exe and liblcl.dll
+  - Added UPX compression for exe and liblcl
   - Changed archive format from ZIP to 7z for better compression (~30-40% smaller)
   - Added multi-threaded compression (`-mmt=on`)
   - Added runtime data exclusion (data/, cache/, GPUCache/)
+- **Linux Build Support** - Added support for building on Linux with CEF 109:
+  - Build script now searches for CEF in multiple locations
+  - Added fallback to CEF-109 for Linux (CEF 136 liblcl not available for Linux)
+  - Added platform-specific error messages with correct install commands
+  - Added manual CEF installation instructions (bypasses SSL issues with energy.yanghy.cn)
 - **Settings UI Improvements** - Renamed and reorganized startup-related settings for clarity:
   - "Start with system" → "Run at startup" - Launch app when logging into the system
   - "Start minimized" → "Start hidden" - Launch in system tray without showing window
