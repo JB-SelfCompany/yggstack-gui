@@ -65,22 +65,28 @@ EOF
     echo -e "${GREEN}✓ Version info generated (${VERSION})${NC}"
 }
 
-# Detect current platform
+# Detect current platform (Linux/Windows only)
 detect_platform() {
     local os=$(uname -s | tr '[:upper:]' '[:lower:]')
     local arch=$(uname -m)
 
     case "$os" in
         linux*)   GOOS="linux" ;;
-        darwin*)  GOOS="darwin" ;;
         mingw*|msys*|cygwin*) GOOS="windows" ;;
-        *)        GOOS="$os" ;;
+        *)
+            echo -e "${RED}Error: Unsupported platform: $os${NC}"
+            echo -e "${YELLOW}Only Linux and Windows are supported${NC}"
+            exit 1
+            ;;
     esac
 
     case "$arch" in
         x86_64|amd64) GOARCH="amd64" ;;
-        aarch64|arm64) GOARCH="arm64" ;;
-        *)            GOARCH="$arch" ;;
+        *)
+            echo -e "${RED}Error: Unsupported architecture: $arch${NC}"
+            echo -e "${YELLOW}Only amd64 (x86_64) is supported${NC}"
+            exit 1
+            ;;
     esac
 }
 
@@ -161,9 +167,14 @@ if [ "$GOOS" = "windows" ]; then
     echo ""
 fi
 
-# Create output directories
+# Clean and create output directories
+echo -e "${YELLOW}Cleaning output directories...${NC}"
+rm -rf "${BIN_DIR}"
+rm -rf "${DIST_DIR}"
 mkdir -p "${BIN_DIR}"
 mkdir -p "${DIST_DIR}"
+echo -e "${GREEN}✓ Output directories cleaned${NC}"
+echo ""
 
 # Determine output filename
 VERSION_PKG="github.com/JB-SelfCompany/yggstack-gui/internal/version"
@@ -188,8 +199,8 @@ echo -e "${YELLOW}Copying CEF framework files...${NC}"
 if [ "$GOOS" = "windows" ]; then
     CEF_DIR="energy/CEF-136_WINDOWS_64"
     [ ! -d "$CEF_DIR" ] && CEF_DIR="$HOME/.energy/cef/CEF-136_WINDOWS_64"
-elif [ "$GOOS" = "linux" ]; then
-    # Try CEF 109 first (has liblcl support), then 136, then ~/.energy
+else
+    # Linux: Try CEF 109 first (has liblcl support), then 136, then ~/.energy
     for dir in "energy/CEF-109_LINUX_64" "energy/CEF-136_LINUX_64" "$HOME/.energy/cef/CEF-109_LINUX_64" "$HOME/.energy/CEF109_LINUX64"; do
         if [ -d "$dir" ]; then
             CEF_DIR="$dir"
@@ -197,33 +208,80 @@ elif [ "$GOOS" = "linux" ]; then
         fi
     done
     [ -z "$CEF_DIR" ] && CEF_DIR="energy/CEF-109_LINUX_64"
-elif [ "$GOOS" = "darwin" ]; then
-    CEF_DIR="energy/CEF-109_MACOSX_64"
-    [ ! -d "$CEF_DIR" ] && CEF_DIR="$HOME/.energy/cef/CEF-109_MACOSX_64"
 fi
 
 if [ -d "$CEF_DIR" ]; then
-    # Copy all CEF files (dll/so/dylib, pak, dat, bin, json) and locales directory
-    cp -r "${CEF_DIR}"/*.dll "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/*.so "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/*.so.* "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/*.dylib "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/*.pak "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/*.dat "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/*.bin "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/*.json "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/locales "${BIN_DIR}/" 2>/dev/null || true
-    # Linux: copy swiftshader and additional libs
-    cp -r "${CEF_DIR}"/swiftshader "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/libEGL.so "${BIN_DIR}/" 2>/dev/null || true
-    cp -r "${CEF_DIR}"/libGLESv2.so "${BIN_DIR}/" 2>/dev/null || true
-    # Copy liblcl from ~/.energy if not in CEF_DIR
-    if [ "$GOOS" = "linux" ] && [ ! -f "${BIN_DIR}/liblcl.so" ]; then
-        cp "$HOME/.energy/liblcl.so" "${BIN_DIR}/" 2>/dev/null || true
-    elif [ "$GOOS" = "darwin" ] && [ ! -f "${BIN_DIR}/liblcl.dylib" ]; then
-        cp "$HOME/.energy/liblcl.dylib" "${BIN_DIR}/" 2>/dev/null || true
+    if [ "$GOOS" = "linux" ]; then
+        # Linux: CEF 109 files are in Release/ and Resources/ subdirectories
+        # Copy libraries from Release/
+        if [ -d "${CEF_DIR}/Release" ]; then
+            cp "${CEF_DIR}/Release"/libcef.so "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Release"/libEGL.so "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Release"/libGLESv2.so "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Release"/libvk_swiftshader.so "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Release"/libvulkan.so.1 "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Release"/snapshot_blob.bin "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Release"/v8_context_snapshot.bin "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Release"/vk_swiftshader_icd.json "${BIN_DIR}/" 2>/dev/null || true
+        fi
+        # Copy resources from Resources/
+        if [ -d "${CEF_DIR}/Resources" ]; then
+            cp "${CEF_DIR}/Resources"/icudtl.dat "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Resources"/resources.pak "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Resources"/chrome_100_percent.pak "${BIN_DIR}/" 2>/dev/null || true
+            cp "${CEF_DIR}/Resources"/chrome_200_percent.pak "${BIN_DIR}/" 2>/dev/null || true
+            # CEF 109 requires all locale files - copy real ones and create stubs
+            mkdir -p "${BIN_DIR}/locales"
+            cp "${CEF_DIR}/Resources/locales/en-US.pak" "${BIN_DIR}/locales/" 2>/dev/null || true
+            cp "${CEF_DIR}/Resources/locales/ru.pak" "${BIN_DIR}/locales/" 2>/dev/null || true
+            # Create stub locales (copy en-US.pak as placeholder for other locales)
+            for locale in am ar bg bn ca cs da de el en-GB es es-419 et fa fi fil fr gu he hi hr hu id it ja kn ko lt lv ml mr ms nb nl pl pt-BR pt-PT ro sk sl sr sv sw ta te th tr uk vi zh-CN zh-TW; do
+                cp "${BIN_DIR}/locales/en-US.pak" "${BIN_DIR}/locales/${locale}.pak" 2>/dev/null || true
+            done
+        fi
+        # Copy liblcl.so from CEF_DIR root or ~/.energy
+        if [ -f "${CEF_DIR}/liblcl.so" ]; then
+            cp "${CEF_DIR}/liblcl.so" "${BIN_DIR}/" 2>/dev/null || true
+        elif [ -f "$HOME/.energy/liblcl.so" ]; then
+            cp "$HOME/.energy/liblcl.so" "${BIN_DIR}/" 2>/dev/null || true
+        fi
+    else
+        # Windows: all files in root directory
+        cp -r "${CEF_DIR}"/*.dll "${BIN_DIR}/" 2>/dev/null || true
+        cp -r "${CEF_DIR}"/*.pak "${BIN_DIR}/" 2>/dev/null || true
+        cp -r "${CEF_DIR}"/*.dat "${BIN_DIR}/" 2>/dev/null || true
+        cp -r "${CEF_DIR}"/*.bin "${BIN_DIR}/" 2>/dev/null || true
+        cp -r "${CEF_DIR}"/*.json "${BIN_DIR}/" 2>/dev/null || true
+        # Copy only en and ru locales for Windows
+        mkdir -p "${BIN_DIR}/locales"
+        cp "${CEF_DIR}/locales/en-US.pak" "${BIN_DIR}/locales/" 2>/dev/null || true
+        cp "${CEF_DIR}/locales/ru.pak" "${BIN_DIR}/locales/" 2>/dev/null || true
     fi
-    echo -e "${GREEN}✓ CEF framework copied to ${BIN_DIR}/${NC}"
+    # Verify critical files were copied
+    if [ "$GOOS" = "linux" ]; then
+        CRITICAL_FILES="libcef.so libEGL.so libGLESv2.so liblcl.so resources.pak icudtl.dat"
+    else
+        CRITICAL_FILES="libcef.dll liblcl.dll resources.pak icudtl.dat"
+    fi
+
+    MISSING=""
+    for f in $CRITICAL_FILES; do
+        if [ ! -f "${BIN_DIR}/$f" ]; then
+            MISSING="$MISSING $f"
+        fi
+    done
+
+    if [ -n "$MISSING" ]; then
+        echo -e "${RED}Warning: Missing critical CEF files:${MISSING}${NC}"
+        echo -e "${YELLOW}CEF_DIR was: ${CEF_DIR}${NC}"
+        ls -la "${CEF_DIR}/" 2>/dev/null | head -20
+    else
+        echo -e "${GREEN}✓ CEF framework copied to ${BIN_DIR}/${NC}"
+        LIB_COUNT=$(ls ${BIN_DIR}/*.so ${BIN_DIR}/*.dll 2>/dev/null | wc -l)
+        PAK_COUNT=$(ls ${BIN_DIR}/*.pak 2>/dev/null | wc -l)
+        LOCALE_COUNT=$(ls ${BIN_DIR}/locales/*.pak 2>/dev/null | wc -l)
+        echo -e "${GREEN}  Libraries: ${LIB_COUNT}, Resources: ${PAK_COUNT}, Locales: ${LOCALE_COUNT}${NC}"
+    fi
 else
     echo -e "${RED}Error: CEF framework not found${NC}"
     echo -e "${RED}Searched: ${CEF_DIR} and ~/.energy/cef/${NC}"
@@ -231,6 +289,25 @@ else
     echo -e "${YELLOW}  go install github.com/energye/energy/v2/cmd/energy@latest${NC}"
     echo -e "${YELLOW}  energy install${NC}"
     exit 1
+fi
+
+# Strip debug symbols from binaries (Linux) - MAXIMUM stripping
+if [ "$GOOS" = "linux" ]; then
+    echo ""
+    echo -e "${YELLOW}Stripping debug symbols (maximum)...${NC}"
+    if command -v strip &> /dev/null; then
+        # Strip all .so files with maximum stripping (-s removes all symbols)
+        for lib in "${BIN_DIR}"/*.so "${BIN_DIR}"/*.so.*; do
+            [ -f "$lib" ] && strip -s "$lib" 2>/dev/null || true
+        done
+        # Strip the main binary
+        strip -s "${BIN_DIR}/${OUTPUT_NAME}" 2>/dev/null || true
+        echo -e "${GREEN}✓ Debug symbols stripped${NC}"
+        BIN_SIZE_AFTER=$(du -sh "${BIN_DIR}" | cut -f1)
+        echo -e "${GREEN}  bin/ size after strip: ${BIN_SIZE_AFTER}${NC}"
+    else
+        echo -e "${YELLOW}⚠ strip not found, skipping${NC}"
+    fi
 fi
 
 # Compress binaries with UPX (if available)
@@ -241,11 +318,57 @@ if [ -f "energy/upx/upx.exe" ] && [ "$GOOS" = "windows" ]; then
     energy/upx/upx.exe -9 --best --lzma "${BIN_DIR}/${OUTPUT_NAME}" 2>/dev/null || true
     energy/upx/upx.exe -9 --best --lzma "${BIN_DIR}/liblcl.dll" 2>/dev/null || true
     echo -e "${GREEN}✓ Binaries compressed${NC}"
-elif command -v upx &> /dev/null && [ "$GOOS" = "linux" ]; then
-    # Linux: use system UPX
-    upx -9 --best --lzma "${BIN_DIR}/${OUTPUT_NAME}" 2>/dev/null || true
-    upx -9 --best --lzma "${BIN_DIR}/liblcl.so" 2>/dev/null || true
-    echo -e "${GREEN}✓ Binaries compressed${NC}"
+elif [ "$GOOS" = "linux" ]; then
+    # Linux: download UPX if not available
+    UPX_BIN=""
+    if command -v upx &> /dev/null; then
+        UPX_BIN="upx"
+    elif [ -f "energy/upx/upx" ]; then
+        UPX_BIN="energy/upx/upx"
+    else
+        # Download UPX for Linux
+        echo -e "${YELLOW}Downloading UPX for Linux...${NC}"
+        mkdir -p energy/upx
+        UPX_VERSION="4.2.4"
+        curl -sL "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz" | tar -xJf - -C energy/upx --strip-components=1 2>/dev/null
+        if [ -f "energy/upx/upx" ]; then
+            chmod +x energy/upx/upx
+            UPX_BIN="energy/upx/upx"
+            echo -e "${GREEN}✓ UPX downloaded${NC}"
+        fi
+    fi
+
+    if [ -n "$UPX_BIN" ]; then
+        # Compress ALL binaries for minimum unpacked size
+        echo -e "${YELLOW}Compressing all binaries (this may take a while)...${NC}"
+
+        # Compress main binary
+        echo -n "  ${OUTPUT_NAME}... "
+        if $UPX_BIN -9 --best --lzma "${BIN_DIR}/${OUTPUT_NAME}" 2>/dev/null; then
+            echo -e "${GREEN}OK${NC}"
+        else
+            echo -e "${YELLOW}skipped${NC}"
+        fi
+
+        # Compress all .so files
+        for lib in "${BIN_DIR}"/*.so; do
+            if [ -f "$lib" ]; then
+                libname=$(basename "$lib")
+                echo -n "  ${libname}... "
+                if $UPX_BIN -9 --best --lzma "$lib" 2>/dev/null; then
+                    echo -e "${GREEN}OK${NC}"
+                else
+                    echo -e "${YELLOW}skipped${NC}"
+                fi
+            fi
+        done
+
+        # Show final size
+        BIN_SIZE_FINAL=$(du -sh "${BIN_DIR}" | cut -f1)
+        echo -e "${GREEN}✓ Compression complete. bin/ size: ${BIN_SIZE_FINAL}${NC}"
+    else
+        echo -e "${YELLOW}⚠ UPX not available, skipping compression${NC}"
+    fi
 else
     echo -e "${YELLOW}⚠ UPX not found, skipping compression${NC}"
 fi
@@ -278,9 +401,38 @@ if [ "$GOOS" = "windows" ]; then
         echo -e "${GREEN}✓ Created ${ARCHIVE_BASE}.zip (PowerShell)${NC}"
     fi
 else
-    tar -czf "${DIST_DIR}/${ARCHIVE_BASE}.tar.gz" -C "${BIN_DIR}" .
-    echo -e "${GREEN}✓ Created ${ARCHIVE_BASE}.tar.gz${NC}"
+    # Linux: use tar with xz compression for better ratio
+    if command -v xz &> /dev/null; then
+        tar -cJf "${DIST_DIR}/${ARCHIVE_BASE}.tar.xz" -C "${BIN_DIR}" \
+            --exclude='*.tar*' \
+            --exclude='*.7z' \
+            --exclude='*.zip' \
+            --exclude='data' \
+            --exclude='cache' \
+            --exclude='GPUCache' \
+            --exclude='blob_storage' \
+            .
+        ARCHIVE_SIZE=$(du -h "${DIST_DIR}/${ARCHIVE_BASE}.tar.xz" | cut -f1)
+        echo -e "${GREEN}✓ Created ${ARCHIVE_BASE}.tar.xz (${ARCHIVE_SIZE})${NC}"
+    else
+        # Fallback to gzip
+        tar -czf "${DIST_DIR}/${ARCHIVE_BASE}.tar.gz" -C "${BIN_DIR}" \
+            --exclude='*.tar*' \
+            --exclude='*.7z' \
+            --exclude='*.zip' \
+            --exclude='data' \
+            --exclude='cache' \
+            --exclude='GPUCache' \
+            --exclude='blob_storage' \
+            .
+        ARCHIVE_SIZE=$(du -h "${DIST_DIR}/${ARCHIVE_BASE}.tar.gz" | cut -f1)
+        echo -e "${GREEN}✓ Created ${ARCHIVE_BASE}.tar.gz (${ARCHIVE_SIZE})${NC}"
+    fi
 fi
+
+# Show bin directory size
+BIN_SIZE=$(du -sh "${BIN_DIR}" | cut -f1)
+echo -e "${GREEN}  Total bin/ size: ${BIN_SIZE}${NC}"
 
 echo ""
 echo -e "${GREEN}════════════════════════════════════════${NC}"

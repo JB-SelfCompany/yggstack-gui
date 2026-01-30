@@ -5,7 +5,8 @@
 Desktop GUI for Yggdrasil Userspace Network Stack
 
 [![License](https://img.shields.io/github/license/JB-SelfCompany/yggstack-gui)](LICENSE)
-![Go](https://img.shields.io/badge/go-1.22+-00ADD8.svg)
+![Go Version](https://img.shields.io/badge/go-1.22+-00ADD8.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey.svg) 
 ![Downloads](https://img.shields.io/github/downloads/JB-SelfCompany/yggstack-gui/total)
 [![Visitors](https://visitor-badge.laobi.icu/badge?page_id=JB-SelfCompany.yggstack-gui)](https://github.com/JB-SelfCompany/yggstack-gui)
 
@@ -67,9 +68,14 @@ Download the latest release from [GitHub Releases](https://github.com/JB-SelfCom
 > **Important:** The application requires CEF libraries (DLL files, locales folder) to be in the same directory as the executable. Do not move only the .exe file - always keep all files together.
 
 **Linux:**
-1. Download `yggstack-gui-x.x.x-linux-amd64.tar.gz`
-2. Extract all files: `tar -xzf yggstack-gui-*.tar.gz`
+1. Download `yggstack-gui-x.x.x-linux-amd64.tar.xz`
+2. Extract all files:
+   ```bash
+   tar -xJf yggstack-gui-*.tar.xz
+   ```
 3. Run: `./yggstack-gui-linux-amd64`
+
+> **Important:** Keep all files together (libraries, locales folder). The application requires CEF libraries to be in the same directory as the executable.
 
 ### From Source
 

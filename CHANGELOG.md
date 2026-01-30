@@ -11,11 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Autostart Toggle in Settings** - Added toggle to enable/disable system startup directly from the Settings page.
 - **Portable Mode** - Application is now fully portable. All configuration files (config.json, yggdrasil.conf, logs) are stored in `data/` subdirectory next to the executable instead of AppData/Roaming.
+- **Auto UPX Download (Linux)** - Build script automatically downloads UPX for Linux if not installed.
 
 ### Fixed
 
 - **Portable Build** - Fixed application not starting when moved to another location or machine. Build now uses `-tags prod` flag which makes the application independent of the global Energy configuration (`~/.energy`).
 - **CEF Library Packaging** - Fixed "CEF binaries missing" error. Build script now automatically copies all required CEF framework files to the output directory.
+- **Linux CEF Structure** - Fixed CEF file copying for Linux. CEF 109 uses `Release/` and `Resources/` subdirectories instead of flat structure like Windows.
+- **Linux Locale Files** - Fixed missing locale files error on Linux. CEF 109 requires all locale .pak files to be present. Now copies en-US.pak and ru.pak as real files, creates stubs for other locales.
 - **Autostart State Detection** - Autostart toggle now reflects the actual system state (from Windows Registry or Linux desktop file) instead of saved config value. This ensures correct display even if autostart was changed outside the app.
 - **Hidden Window Startup** - Fixed window flashing briefly when starting with `--minimized` flag. Now uses `WindowInitState = WsMinimized` and hides window immediately in SetBrowserInit callback.
 - **Settings Toggle Animation** - Fixed toggles animating from OFF to ON when opening Settings page. Added `isLoaded` flag to disable CSS transitions until settings are loaded from backend.
@@ -29,11 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Changed archive format from ZIP to 7z for better compression (~30-40% smaller)
   - Added multi-threaded compression (`-mmt=on`)
   - Added runtime data exclusion (data/, cache/, GPUCache/)
-- **Linux Build Support** - Added support for building on Linux with CEF 109:
-  - Build script now searches for CEF in multiple locations
-  - Added fallback to CEF-109 for Linux (CEF 136 liblcl not available for Linux)
-  - Added platform-specific error messages with correct install commands
-  - Added manual CEF installation instructions (bypasses SSL issues with energy.yanghy.cn)
+  - Added clean of bin/ and dist/ directories before each build
+- **Linux Build Improvements**:
+  - CEF files now copied from correct subdirectories (Release/, Resources/)
+  - Added `strip -s` for maximum debug symbol removal (~800MB size reduction)
+  - Added automatic UPX download and compression for all .so files
+  - Changed archive format to `.tar.xz` for better compression
+  - Only en-US and ru locales are real files, others are stubs
+- **Removed macOS Support** - Application now supports only Linux and Windows (amd64).
 - **Settings UI Improvements** - Renamed and reorganized startup-related settings for clarity:
   - "Start with system" → "Run at startup" - Launch app when logging into the system
   - "Start minimized" → "Start hidden" - Launch in system tray without showing window
@@ -44,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - Updated installation instructions in README.md and README.ru.md
+- Changed Linux archive format documentation from `.tar.gz` to `.tar.xz`
 - Added note about keeping all files together (CEF requirement)
 
 ## [0.1.2] - 2026-01-20

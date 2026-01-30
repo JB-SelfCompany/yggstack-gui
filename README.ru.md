@@ -5,7 +5,8 @@
 Графический интерфейс для пользовательского сетевого стека Yggdrasil
 
 [![Лицензия](https://img.shields.io/github/license/JB-SelfCompany/yggstack-gui)](LICENSE)
-![Go](https://img.shields.io/badge/go-1.22+-00ADD8.svg)
+![Go Version](https://img.shields.io/badge/go-1.22+-00ADD8.svg)
+![Платформы](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey.svg) 
 ![Загрузки](https://img.shields.io/github/downloads/JB-SelfCompany/yggstack-gui/total)
 [![Посетители](https://visitor-badge.laobi.icu/badge?page_id=JB-SelfCompany.yggstack-gui)](https://github.com/JB-SelfCompany/yggstack-gui)
 
@@ -67,9 +68,14 @@ Yggstack-GUI — это кроссплатформенное десктопно�
 > **Важно:** Приложению требуются библиотеки CEF (DLL-файлы, папка locales) в той же директории, что и исполняемый файл. Не перемещайте только .exe файл - всегда храните все файлы вместе.
 
 **Linux:**
-1. Скачайте `yggstack-gui-x.x.x-linux-amd64.tar.gz`
-2. Распакуйте все файлы: `tar -xzf yggstack-gui-*.tar.gz`
+1. Скачайте `yggstack-gui-x.x.x-linux-amd64.tar.xz`
+2. Распакуйте все файлы:
+   ```bash
+   tar -xJf yggstack-gui-*.tar.xz
+   ```
 3. Запустите: `./yggstack-gui-linux-amd64`
+
+> **Важно:** Сохраняйте все файлы вместе (библиотеки, папка locales). Приложению требуются CEF-библиотеки в той же директории, что и исполняемый файл.
 
 ### Из исходного кода
 
